@@ -6,7 +6,8 @@ set -euo pipefail
 cd "$REPO_ROOT"
 need yamllint
 
-mapfile -t yml < <(repo_files '*.yml' '*.yaml')
+yml=()
+repo_files yml '*.yml' '*.yaml'
 [ "${#yml[@]}" -eq 0 ] && { ok "yaml: no files"; exit 0; }
 yamllint --strict --config-file .yamllint.yaml -- "${yml[@]}"
 ok "yaml: ${#yml[@]} files clean"

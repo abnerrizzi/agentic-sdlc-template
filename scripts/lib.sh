@@ -3,6 +3,12 @@
 # Rules for every script in scripts/: bash, set -euo pipefail, shellcheck-clean,
 # and no network calls (the only exception is install-tools.sh).
 
+# These scripts use mapfile -d, namerefs and other bash 4.4 features. macOS ships bash 3.2.
+if [ "${BASH_VERSINFO[0]}" -lt 4 ] || { [ "${BASH_VERSINFO[0]}" -eq 4 ] && [ "${BASH_VERSINFO[1]}" -lt 4 ]; }; then
+  printf 'FAIL bash 4.4 or newer is required (found %s). Install a newer bash, or use make check-docker.\n' "$BASH_VERSION" >&2
+  exit 1
+fi
+
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 export REPO_ROOT
 
@@ -32,14 +38,39 @@ need() {
   die "$1 not found. Run 'make doctor' for install hints, or use 'make check-docker'."
 }
 
-# repo_files [PATHSPEC...]: files git tracks or would track (not ignored), that exist.
-# Using git keeps _local/, node_modules/ and other ignored paths out of every check.
+# git_z ARRAY GIT_ARGS...: run git in the repo and fill ARRAY (in the current shell)
+# with its NUL-delimited output. Names are never C-quoted and may hold any byte
+# except NUL. A git failure (not a repo, "dubious ownership", bad ref) is fatal for
+# the calling script. Process substitution would hide that exit status, so the
+# output goes through a temp file.
+git_z() {
+  local -n _gz_out="$1"
+  shift
+  local _gz_tmp _gz_rc=0
+  _gz_tmp="$(mktemp)" || die "cannot create a temp file"
+  git -C "$REPO_ROOT" "$@" >"$_gz_tmp" || _gz_rc=$?
+  if [ "$_gz_rc" -ne 0 ]; then
+    rm -f "$_gz_tmp"
+    die "git $* failed (exit $_gz_rc). Is this a git repository you may read (safe.directory)?"
+  fi
+  mapfile -d '' -t _gz_out <"$_gz_tmp"
+  rm -f "$_gz_tmp"
+}
+
+# repo_files ARRAY [PATHSPEC...]: fill ARRAY with the files git tracks or would
+# track (not ignored) that exist, sorted and unique. Using git keeps _local/,
+# node_modules/ and other ignored paths out of every check. Dies when git fails,
+# so a broken repo can never look like "no files".
 repo_files() {
-  git -C "$REPO_ROOT" ls-files --cached --others --exclude-standard -- "$@" |
-    sort -u |
-    while IFS= read -r f; do
-      [ -f "$REPO_ROOT/$f" ] && printf '%s\n' "$f"
-    done
+  local -n _rf_out="$1"
+  shift
+  local -a _rf_all=()
+  local _rf_f
+  git_z _rf_all ls-files -z --cached --others --exclude-standard -- "$@"
+  _rf_out=()
+  while IFS= read -r -d '' _rf_f; do
+    [ -f "$REPO_ROOT/$_rf_f" ] && _rf_out+=("$_rf_f")
+  done < <(if [ "${#_rf_all[@]}" -gt 0 ]; then printf '%s\0' "${_rf_all[@]}" | sort -z -u; fi)
   return 0
 }
 

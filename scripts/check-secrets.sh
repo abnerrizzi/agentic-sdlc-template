@@ -14,8 +14,10 @@ gitleaks git "${opts[@]}" --staged . || die "secret found in staged changes"
 gitleaks git "${opts[@]}" --pre-commit . || die "secret found in unstaged changes"
 
 # Untracked files that are not ignored: git has never seen them.
-while IFS= read -r f; do
+untracked=()
+git_z untracked ls-files -z --others --exclude-standard
+for f in "${untracked[@]}"; do
   gitleaks stdin "${opts[@]}" < "$f" || die "secret found in untracked file: $f"
-done < <(git ls-files --others --exclude-standard)
+done
 
 ok "secrets: gitleaks found nothing"

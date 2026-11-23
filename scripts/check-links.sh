@@ -8,7 +8,8 @@ set -euo pipefail
 cd "$REPO_ROOT"
 need lychee
 
-mapfile -t md < <(repo_files '*.md')
+md=()
+repo_files md '*.md'
 [ "${#md[@]}" -eq 0 ] && { ok "links: no files"; exit 0; }
 lychee --config lychee.toml -- "${md[@]}"
 ok "links: internal links valid in ${#md[@]} files"

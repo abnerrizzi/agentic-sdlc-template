@@ -6,7 +6,8 @@ set -euo pipefail
 cd "$REPO_ROOT"
 need shellcheck
 
-mapfile -t sh < <(repo_files '*.sh')
+sh=()
+repo_files sh '*.sh'
 [ "${#sh[@]}" -eq 0 ] && { ok "shell: no files"; exit 0; }
 shellcheck --external-sources --source-path=SCRIPTDIR -- "${sh[@]}"
 ok "shell: ${#sh[@]} scripts clean"

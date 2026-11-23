@@ -6,7 +6,8 @@ set -euo pipefail
 cd "$REPO_ROOT"
 need markdownlint-cli2
 
-mapfile -t md < <(repo_files '*.md')
+md=()
+repo_files md '*.md'
 [ "${#md[@]}" -eq 0 ] && { ok "markdown: no files"; exit 0; }
 markdownlint-cli2 "${md[@]}"
 ok "markdown: ${#md[@]} files clean"
