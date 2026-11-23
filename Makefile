@@ -21,7 +21,7 @@ CHECK_TAG := agentic-sdlc-check:$(shell cat $(CHECK_INPUTS) 2>/dev/null | sha256
 	check-template-sync verifier-guard
 
 help: ## List targets
-	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{ printf "  %-20s %s\n", $$1, $$2 }'
+	@grep -hE '^[a-z-]+:.*## ' Makefile | awk -F':.*## ' '{ printf "  %-20s %s\n", $$1, $$2 }'
 
 check: ## Run every verifier; fails on any error
 	@scripts/run-checks.sh

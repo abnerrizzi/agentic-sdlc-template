@@ -12,6 +12,9 @@ strict=0
 
 semver() { grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -n 1; }
 
+# version_at_least FOUND MIN: true when FOUND >= MIN (dotted numbers).
+version_at_least() { [ "$(printf '%s\n%s\n' "$2" "$1" | sort -V | head -n 1)" = "$2" ]; }
+
 detect() {
   case "$1" in
     gitleaks)          gitleaks version 2>/dev/null | semver ;;
@@ -48,7 +51,9 @@ for row in "${ROWS[@]}"; do
   found="$(detect "$tool" || true)"
   if [ -z "$found" ]; then
     status=MISSING
-  elif [ "$want" = any ] || [ "${want#>= }" != "$want" ] || [ "$found" = "$want" ]; then
+  elif [ "$want" = any ] || [ "$found" = "$want" ]; then
+    status=ok
+  elif [ "${want#>= }" != "$want" ] && version_at_least "$found" "${want#>= }"; then
     status=ok
   else
     status=DIFFERS
