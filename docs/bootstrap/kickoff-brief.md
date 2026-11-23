@@ -181,6 +181,3 @@ Every doc should be short and practical, with one Mermaid diagram where a flow e
 7. A time and size estimate per phase.
 
 Then stop and wait for my approval.
-
-
-
