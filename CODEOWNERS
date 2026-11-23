@@ -13,7 +13,11 @@
 
 # Verifiers: never changed together with the content they verify.
 # scripts/verifier-guard.sh reads the paths between the markers below.
-# Supported forms: /exact/file and /folder/ (anchored at the repo root).
+# Supported forms, gitignore style (valid on GitHub, GitLab and Gitea):
+#   /exact/file and /folder/  anchored at the repo root.
+#   name or *.ext             no leading slash and no other slash: matches that
+#                             name at any depth. It may glob. Use it for config
+#                             files the tools read from any directory.
 # BEGIN verifier paths
 /Makefile                       @OWNER
 /scripts/                       @OWNER
@@ -31,4 +35,9 @@
 /.claude/settings.json          @OWNER
 /.dockerignore                  @OWNER
 /CODEOWNERS                     @OWNER
+/.gitleaksignore                @OWNER
+/.lycheeignore                  @OWNER
+/.gitattributes                 @OWNER
+.shellcheckrc                   @OWNER
+.markdownlint*                  @OWNER
 # END verifier paths
