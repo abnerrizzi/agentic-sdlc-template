@@ -11,7 +11,10 @@
 # Everything
 *                               @OWNER
 
-# Verifiers: never changed together with the content they verify
+# Verifiers: never changed together with the content they verify.
+# scripts/verifier-guard.sh reads the paths between the markers below.
+# Supported forms: /exact/file and /folder/ (anchored at the repo root).
+# BEGIN verifier paths
 /Makefile                       @OWNER
 /scripts/                       @OWNER
 /tools.versions                 @OWNER
@@ -26,4 +29,6 @@
 /.yamllint.yaml                 @OWNER
 /lychee.toml                    @OWNER
 /.claude/settings.json          @OWNER
+/.dockerignore                  @OWNER
 /CODEOWNERS                     @OWNER
+# END verifier paths
