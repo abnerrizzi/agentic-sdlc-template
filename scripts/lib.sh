@@ -38,12 +38,27 @@ need() {
   die "$1 not found. Run 'make doctor' for install hints, or use 'make check-docker'."
 }
 
+# check_array_name NAME RESERVED_GLOB...: die unless NAME is a plain variable name that
+# does not collide with the internal names of the helper below. A nameref that points at
+# the helper's own local would silently hand the caller an empty array (fail-open).
+check_array_name() {
+  local _ca_name="$1" _ca_glob
+  shift
+  [[ "$_ca_name" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || die "internal error: '$_ca_name' is not a valid array name"
+  for _ca_glob in "$@"; do
+    # shellcheck disable=SC2053 # the reserved names are globs
+    [[ "$_ca_name" == $_ca_glob ]] && die "internal error: array name '$_ca_name' collides with a helper's own variable; pick another name"
+  done
+  return 0
+}
+
 # git_z ARRAY GIT_ARGS...: run git in the repo and fill ARRAY (in the current shell)
 # with its NUL-delimited output. Names are never C-quoted and may hold any byte
 # except NUL. A git failure (not a repo, "dubious ownership", bad ref) is fatal for
 # the calling script. Process substitution would hide that exit status, so the
 # output goes through a temp file.
 git_z() {
+  check_array_name "$1" '_gz_*'
   local -n _gz_out="$1"
   shift
   local _gz_tmp _gz_rc=0
@@ -62,6 +77,7 @@ git_z() {
 # node_modules/ and other ignored paths out of every check. Dies when git fails,
 # so a broken repo can never look like "no files".
 repo_files() {
+  check_array_name "$1" '_rf_*' '_gz_*'
   local -n _rf_out="$1"
   shift
   local -a _rf_all=()
