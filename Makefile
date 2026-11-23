@@ -18,7 +18,7 @@ CHECK_TAG := agentic-sdlc-check:$(shell cat $(CHECK_INPUTS) 2>/dev/null | sha256
 
 .PHONY: help check doctor install-tools check-docker \
 	check-secrets check-text check-markdown check-links check-yaml check-shell \
-	check-template-sync verifier-guard
+	check-template-sync check-ci-pins verifier-guard
 
 help: ## List targets
 	@grep -hE '^[a-z-]+:.*## ' Makefile | awk -F':.*## ' '{ printf "  %-20s %s\n", $$1, $$2 }'
@@ -61,5 +61,7 @@ check-shell: ## shellcheck
 	@scripts/check-shell.sh
 check-template-sync: ## GitHub and GitLab templates have the same content
 	@scripts/check-template-sync.sh
+check-ci-pins: ## CI files use the image and action pins from tools.versions and SHAs
+	@scripts/check-ci-pins.sh
 verifier-guard: ## Verifier and non-verifier paths never change together
 	@scripts/verifier-guard.sh

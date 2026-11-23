@@ -16,6 +16,7 @@ CHECKS=(
   yaml:check-yaml.sh
   shell:check-shell.sh
   template-sync:check-template-sync.sh
+  ci-pins:check-ci-pins.sh
   verifier-guard:verifier-guard.sh
 )
 
