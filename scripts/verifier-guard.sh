@@ -31,10 +31,11 @@
 # cannot tell who wrote a commit. An author name, an email and a trailer are
 # plain text that anyone can type, and a change can edit this very script. The
 # real control is outside the repo: a protected main branch plus owner approval
-# (CODEOWNERS) of every verifier path. CI must also run the guard from the base
-# branch, not from the change's own copy, for example:
-#   git show "$base:scripts/verifier-guard.sh" > "$RUNNER_TEMP/guard.sh"
-# (the CI wiring comes in Phase 3).
+# (CODEOWNERS) of every verifier path. CI also runs the guard from the base
+# branch, not from the change's own copy: after make check, the workflow and
+# .gitlab-ci.yml call scripts/ci-base-guard.sh, which extracts scripts/ from the
+# base ref and runs that copy against this checkout (via the REPO_ROOT override in
+# lib.sh). If the base has no usable guard yet, that script warns and skips.
 set -euo pipefail
 # shellcheck source=lib.sh
 . "$(dirname "$0")/lib.sh"
