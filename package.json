@@ -1,0 +1,13 @@
+{
+  "name": "agentic-sdlc-template-tools",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Pinned Node-based lint tools for make check. Installed with npm ci into the tools directory, never into the repo.",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "markdownlint-cli2": "0.24.0"
+  }
+}

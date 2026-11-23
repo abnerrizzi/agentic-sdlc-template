@@ -1,0 +1,42 @@
+# Tool pins: the single source of truth for versions and checksums.
+# Read by the Makefile (include), scripts/install-tools.sh and scripts/doctor.sh.
+# Format: KEY=value, no quotes, no inline comments (Make and sh both parse it).
+#
+# Rules (see docs, phase 4):
+# - Pin only releases that are at least 14 days old on the day you pin them.
+# - Record the release date and where the checksum came from.
+# - Change pins in their own MR/PR; this file is a verifier path in CODEOWNERS.
+
+# Container image for make check-docker and CI. Docker Hub tag pushed 2026-10-24.
+# Pinned by multi-arch index digest. Source: hub.docker.com/_/python
+CHECK_IMAGE=python:3.13.17-slim-trixie@sha256:d98cc29d3266e535dd9da1099688d9cb3ca4753813571e071763d17725460962
+
+# gitleaks, released 2026-03-21. Checksums match gitleaks_8.30.1_checksums.txt from the release.
+GITLEAKS_VERSION=8.30.1
+GITLEAKS_SHA256_LINUX_X64=551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+GITLEAKS_SHA256_LINUX_ARM64=e4a487ee7ccd7d3a7f7ec08657610aa3606637dab924210b3aee62570fb4b080
+
+# lychee (musl static build), released 2026-05-01. Checksums match the .sha256 files from the release.
+LYCHEE_VERSION=0.24.2
+LYCHEE_SHA256_LINUX_X64=73657a111819a30c47c08352896796f23d64e4eb2b3ed39b6d32149241566fc5
+LYCHEE_SHA256_LINUX_ARM64=5d0b0e3aeab240f41920c633a6eaf97599be6eedda034b36e858ede7dba5e535
+
+# shellcheck, released 2025-08-04. Checksums match the asset digests shown by the GitHub releases API.
+SHELLCHECK_VERSION=0.11.0
+SHELLCHECK_SHA256_LINUX_X64=b7af85e41cc99489dcc21d66c6d5f3685138f06d34651e6d34b42ec6d54fe6f6
+SHELLCHECK_SHA256_LINUX_ARM64=68a8133197a50beb8803f8d42f9908d1af1c5540d4bb05fdfca8c1fa47decefc
+
+# Node.js LTS (Krypton), released 2026-10-27. Checksums match SHASUMS256.txt from nodejs.org.
+# Needs glibc 2.28 or newer; on older hosts use make check-docker.
+NODE_VERSION=24.22.2
+NODE_SHA256_LINUX_X64=48cc0e21e048790e54c0cf5749c2725005313d652651c40b7a21feb9697aaf75
+NODE_SHA256_LINUX_ARM64=eb187837a2230d4047161ac0be008584e16b46f726e9c9490ee35dc6b17d9ba8
+
+# markdownlint-cli2, released 2026-10-21. The pin and its dependency tree live in
+# package.json and package-lock.json (integrity hashes). Repeated here for make doctor.
+MARKDOWNLINT_CLI2_VERSION=0.24.0
+
+# yamllint, released 2026-01-13. Needs Python 3.10 or newer. The pin and hashes live in
+# requirements-lint.txt (pip --require-hashes). Repeated here for make doctor.
+YAMLLINT_VERSION=1.38.0
+PYTHON_MIN_VERSION=3.10
