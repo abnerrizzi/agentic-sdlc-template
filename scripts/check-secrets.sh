@@ -9,9 +9,9 @@ need gitleaks
 
 opts=(--config .gitleaks.toml --redact --no-banner --log-level warn --exit-code 1)
 
-gitleaks git "${opts[@]}" .                  # every commit
-gitleaks git "${opts[@]}" --staged .         # staged, not yet committed
-gitleaks git "${opts[@]}" --pre-commit .     # unstaged changes to tracked files
+gitleaks git "${opts[@]}" . || die "secret found in git history. Rotate it first, then rewrite history."
+gitleaks git "${opts[@]}" --staged . || die "secret found in staged changes"
+gitleaks git "${opts[@]}" --pre-commit . || die "secret found in unstaged changes"
 
 # Untracked files that are not ignored: git has never seen them.
 while IFS= read -r f; do
