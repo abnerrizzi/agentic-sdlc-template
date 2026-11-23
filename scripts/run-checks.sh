@@ -6,7 +6,9 @@ set -euo pipefail
 . "$(dirname "$0")/lib.sh"
 cd "$REPO_ROOT"
 
+# name:script [args]. tools runs first: a check run with the wrong tool version proves nothing.
 CHECKS=(
+  "tools:doctor.sh --strict"
   secrets:check-secrets.sh
   text:check-text.sh
   markdown:check-markdown.sh
@@ -20,9 +22,9 @@ CHECKS=(
 failed=()
 for entry in "${CHECKS[@]}"; do
   name="${entry%%:*}"
-  script="${entry#*:}"
+  read -r -a cmd <<<"${entry#*:}"
   info "== $name"
-  if ! "$REPO_ROOT/scripts/$script"; then
+  if ! "$REPO_ROOT/scripts/${cmd[0]}" "${cmd[@]:1}"; then
     failed+=("$name")
   fi
 done

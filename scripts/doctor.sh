@@ -71,5 +71,7 @@ if [ "$problems" -gt 0 ]; then
   info "Install the pins: scripts/install-tools.sh   (downloads, checks sha256, writes only to the tools directory)"
   info "Or run everything in the pinned container: make check-docker"
   [ "$strict" -eq 1 ] && exit 1
+else
+  ok "tools: every required tool is present at its pin"
 fi
 exit 0

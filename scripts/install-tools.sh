@@ -96,4 +96,4 @@ info "pip install yamllint"
   --require-hashes --no-deps --only-binary=:all: -r "$REPO_ROOT/requirements-lint.txt"
 
 ok "tools installed in $TOOLS_DIR"
-"$REPO_ROOT/scripts/doctor.sh"
+"$REPO_ROOT/scripts/doctor.sh" --strict
