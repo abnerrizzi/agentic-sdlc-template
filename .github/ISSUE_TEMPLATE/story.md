@@ -14,14 +14,14 @@ TODO(verify): GitHub docs do not list the `about` key for Markdown templates; ch
 
 ## User story
 
-As a <role>,
-I want <capability>,
-so that <benefit>.
+As a [role],
+I want [capability],
+so that [benefit].
 
 ## Acceptance criteria
 
-- [ ] **Given** <context>, **When** <action>, **Then** <outcome>
-- [ ] **Given** <context>, **When** <action>, **Then** <outcome>
+- [ ] **Given** [context], **When** [action], **Then** [outcome]
+- [ ] **Given** [context], **When** [action], **Then** [outcome]
 
 ## Security notes
 
