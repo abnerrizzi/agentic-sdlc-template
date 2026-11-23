@@ -40,6 +40,7 @@ The guard blocks content files on a verifier branch, so these wait for Phase 4 a
 - shellcheck read a comment starting with "shellcheck," in `tools.versions` as a directive (SC1073).
 - `make doctor` reported an old Python as ok because "at least" versions were not compared. Fixed.
 - The scripts directory chmod made `lib.sh` executable by accident. It is sourced, so it stays 0644.
+- The wikilink check flagged a quoted Obsidian setting name written with double brackets. Write it as "Use Wikilinks" in docs.
 - An old build host (glibc 2.17, Docker without registry access) blocked Markdown and YAML lint.
 
 ## Working agreements from the session
@@ -106,7 +107,7 @@ Obsidian is an optional, local, free editor over plain Markdown folders. The tem
 ### Settings to apply by hand (documented, not committed)
 
 - **Files and links:**
-  - "Use [[Wikilinks]]" off.
+  - the "Use Wikilinks" setting off.
   - "New link format" set to "Relative path to file".
   - "Automatically update internal links" on.
 - **Core Templates plugin:** template folder is `templates`.
