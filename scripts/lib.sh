@@ -9,7 +9,18 @@ if [ "${BASH_VERSINFO[0]}" -lt 4 ] || { [ "${BASH_VERSINFO[0]}" -eq 4 ] && [ "${
   exit 1
 fi
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# REPO_ROOT is the folder above scripts/. One override exists: a REPO_ROOT that is already
+# set and points into a git work tree wins. scripts/ci-base-guard.sh uses it to run the
+# base branch's copy of a script (extracted to a temp dir) against this checkout. The
+# override is announced on stderr, so a stray REPO_ROOT in your shell never goes unnoticed.
+_lib_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if [ -n "${REPO_ROOT:-}" ] && git -C "$REPO_ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  REPO_ROOT="$(cd "$REPO_ROOT" && pwd)"
+  [ "$REPO_ROOT" = "$_lib_root" ] || printf 'note REPO_ROOT override in use: %s (scripts from %s)\n' "$REPO_ROOT" "$_lib_root" >&2
+else
+  REPO_ROOT="$_lib_root"
+fi
+unset _lib_root
 export REPO_ROOT
 
 # Where install-tools.sh puts pinned tools. Outside the repo, so checks never scan them.
