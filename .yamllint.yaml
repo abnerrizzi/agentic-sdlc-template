@@ -1,0 +1,16 @@
+# yamllint configuration.
+# Format: https://yamllint.readthedocs.io/en/stable/configuration.html
+extends: default
+
+rules:
+  # CI files commonly start without "---".
+  document-start: disable
+  line-length:
+    max: 160
+  # GitHub Actions uses "on:" as a key; only check values.
+  truthy:
+    allowed-values: ["true", "false"]
+    check-keys: false
+  # Pinned actions carry the version as a comment: "uses: x@<sha> # v1.2.3".
+  comments:
+    min-spaces-from-content: 1

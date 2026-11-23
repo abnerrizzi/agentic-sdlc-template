@@ -1,0 +1,16 @@
+# markdownlint-cli2 configuration.
+# Format: https://github.com/DavidAnson/markdownlint-cli2#markdownlint-cli2yaml
+# Rules: https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md
+# scripts/check-markdown.sh passes the file list (git-tracked Markdown only).
+config:
+  default: true
+  # Prose is not hard-wrapped; long lines are fine.
+  MD013: false
+  # The same heading text is fine in different sections (templates repeat "Notes").
+  MD024:
+    siblings_only: true
+  # Issue and MR/PR templates start with a section heading, not a title.
+  MD041: false
+  # Use dashes for lists everywhere.
+  MD004:
+    style: dash
