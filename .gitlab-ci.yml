@@ -48,10 +48,14 @@ check:
     # Installs git, make and curl first, then the pinned tools.
     - scripts/install-tools.sh --with-os-packages
     - git config --global --add safe.directory "$CI_PROJECT_DIR"
+    # Fetch the MR target branch before make check, so both guards compare against it.
+    - |
+      if [ -n "${CI_MERGE_REQUEST_TARGET_BRANCH_NAME:-}" ]; then
+        git fetch --no-tags origin "+refs/heads/${CI_MERGE_REQUEST_TARGET_BRANCH_NAME}:refs/remotes/origin/${CI_MERGE_REQUEST_TARGET_BRANCH_NAME}"
+      fi
     - make check
     # make check ran the change's own copy of the guard. This runs the target branch's copy.
     - |
       if [ -n "${CI_MERGE_REQUEST_TARGET_BRANCH_NAME:-}" ]; then
-        git fetch --no-tags origin "+refs/heads/${CI_MERGE_REQUEST_TARGET_BRANCH_NAME}:refs/remotes/origin/${CI_MERGE_REQUEST_TARGET_BRANCH_NAME}"
         scripts/ci-base-guard.sh
       fi
