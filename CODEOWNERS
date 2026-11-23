@@ -1,0 +1,29 @@
+# Code owners. One file at the repo root is read by GitHub, GitLab and Gitea.
+# Replace @OWNER with your user or group before you use this template.
+#
+# Order matters: the last matching pattern wins. Verifier paths are listed
+# explicitly at the end so a change to them always needs the owner, even if
+# you later hand other folders to other teams.
+# GitLab note: enforcing code owner approval needs a paid tier. On GitLab Free
+# the file still shows owners, and scripts/verifier-guard.sh plus a protected
+# main branch do the enforcing.
+
+# Everything
+*                               @OWNER
+
+# Verifiers: never changed together with the content they verify
+/Makefile                       @OWNER
+/scripts/                       @OWNER
+/tools.versions                 @OWNER
+/package.json                   @OWNER
+/package-lock.json              @OWNER
+/requirements-lint.txt          @OWNER
+/ci/                            @OWNER
+/.github/workflows/             @OWNER
+/.gitlab-ci.yml                 @OWNER
+/.gitleaks.toml                 @OWNER
+/.markdownlint-cli2.yaml        @OWNER
+/.yamllint.yaml                 @OWNER
+/lychee.toml                    @OWNER
+/.claude/settings.json          @OWNER
+/CODEOWNERS                     @OWNER
