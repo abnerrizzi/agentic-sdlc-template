@@ -7,9 +7,9 @@ set -euo pipefail
 cd "$REPO_ROOT"
 need gitleaks
 
-opts=(--config .gitleaks.toml --redact --no-banner --log-level warn --exit-code 1)
+opts=(--config .gitleaks.toml --redact --verbose --no-banner --log-level warn --exit-code 1)
 
-gitleaks git "${opts[@]}" . || die "secret found in git history. Rotate it first, then rewrite history."
+gitleaks git "${opts[@]}" . || die "secret found in git history. Rotate it now, then tell the owner; do not rewrite shared history yourself."
 gitleaks git "${opts[@]}" --staged . || die "secret found in staged changes"
 gitleaks git "${opts[@]}" --pre-commit . || die "secret found in unstaged changes"
 
