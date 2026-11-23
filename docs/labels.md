@@ -68,7 +68,7 @@ Do it once per project. This repo makes no API calls for you.
 ### By hand
 
 - GitHub: repository, Issues, Labels, New label.
-- GitLab: project, Manage, Labels, New label. Names with a slash become scoped labels on tiers that support them; on Free they are plain labels and still work.
+- GitLab: project, Manage, Labels, New label. Scoped labels use a double colon (`key::value`) and need Premium or Ultimate ([labels docs](https://docs.gitlab.com/user/project/labels/)). Our names use a slash, so they are plain labels on every tier. Do not rename them to `::`.
 - Gitea: repository, Issues, Labels, New Label.
 
 ### With a CLI (optional)
