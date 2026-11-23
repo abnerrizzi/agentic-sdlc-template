@@ -32,6 +32,7 @@
 /requirements-lint.txt          @OWNER
 /ci/                            @OWNER
 /.github/workflows/             @OWNER
+/.gitea/workflows/             @OWNER
 /.gitlab-ci.yml                 @OWNER
 /.gitleaks.toml                 @OWNER
 /.markdownlint-cli2.yaml        @OWNER

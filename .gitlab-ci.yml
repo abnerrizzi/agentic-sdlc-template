@@ -1,0 +1,61 @@
+# Thin CI wrapper: install the pinned tools, run make check, run the base-branch guard.
+# All logic lives in scripts/ (see CLAUDE.md). Nothing here needs a secret. GitLab Free is enough.
+#
+# Docs this file was written from (read 2026-11-23):
+# - workflow:rules (the duplicate-pipeline pattern used below):
+#   https://docs.gitlab.com/ci/yaml/workflow/
+# - rules, and "jobs without rules do not run in merge request pipelines":
+#   https://docs.gitlab.com/ci/jobs/job_rules/
+# - GIT_DEPTH (0 = complete history of all branches and tags):
+#   https://docs.gitlab.com/ci/runners/configure_runners/
+# - Predefined variables (CI_MERGE_REQUEST_TARGET_BRANCH_NAME, CI_COMMIT_BRANCH is not
+#   set in merge request pipelines): https://docs.gitlab.com/ci/variables/predefined_variables/
+#
+# Is the MR target branch available as origin/<target>? The docs say a merge request
+# pipeline "runs on the contents of the source branch only and ignores the target branch"
+# (https://docs.gitlab.com/ci/pipelines/merge_request_pipelines/) and do not say whether the
+# target branch is fetched. The runner's refspecs come from the GitLab server and are not
+# documented. So the job fetches the target branch itself and fails if it cannot (fail
+# closed). A fork MR whose pipeline runs in the fork may not have the target branch in origin.
+# TODO(verify): behaviour for fork MRs, https://docs.gitlab.com/ci/pipelines/merge_request_pipelines/
+#
+# Supply chain: the image is the same CHECK_IMAGE as tools.versions, pinned by digest.
+# YAML cannot include tools.versions, so scripts/check-ci-pins.sh fails when the two differ.
+# No third-party CI components are used.
+
+# One pipeline per change: a merge request pipeline, or a branch pipeline on develop or
+# main (or the default branch). A branch with an open MR gets no second (branch) pipeline.
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /^(develop|main)$/
+
+check:
+  stage: test
+  # Keep the digest in sync with CHECK_IMAGE in tools.versions.
+  image: python:3.13.17-slim-trixie@sha256:d98cc29d3266e535dd9da1099688d9cb3ca4753813571e071763d17725460962
+  timeout: 30 minutes
+  variables:
+    # Complete history of all branches: the guard needs the merge base with the target branch.
+    GIT_DEPTH: "0"
+  # A job with no rules would not run in merge request pipelines.
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /^(develop|main)$/
+  script:
+    # Installs git, make and curl first, then the pinned tools.
+    - scripts/install-tools.sh --with-os-packages
+    - git config --global --add safe.directory "$CI_PROJECT_DIR"
+    # Fetch the MR target branch before make check, so both guards compare against it.
+    - |
+      if [ -n "${CI_MERGE_REQUEST_TARGET_BRANCH_NAME:-}" ]; then
+        git fetch --no-tags origin "+refs/heads/${CI_MERGE_REQUEST_TARGET_BRANCH_NAME}:refs/remotes/origin/${CI_MERGE_REQUEST_TARGET_BRANCH_NAME}"
+      fi
+    - make check
+    # make check ran the change's own copy of the guard. This runs the target branch's copy.
+    - |
+      if [ -n "${CI_MERGE_REQUEST_TARGET_BRANCH_NAME:-}" ]; then
+        scripts/ci-base-guard.sh
+      fi
