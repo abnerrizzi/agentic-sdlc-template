@@ -1,0 +1,8 @@
+# lychee configuration for an offline, internal-only link check.
+# Format: https://lychee.cli.rs/guides/config/
+# External URLs are skipped (offline), so the result never depends on the network.
+offline = true
+# Also check #anchors inside Markdown files. Since lychee 0.24 this is a mode string, not a boolean
+# (see lychee.example.toml at the pinned tag).
+include_fragments = "full"
+no_progress = true

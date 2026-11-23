@@ -11,7 +11,19 @@
 # Everything
 *                               @OWNER
 
-# Verifiers: never changed together with the content they verify
+# Why the extra CODEOWNERS paths: GitHub and GitLab read .github/, .gitlab/ and docs/
+# CODEOWNERS before the root file, so a new one would replace root ownership.
+# .gitignore decides which files the checks see at all.
+#
+# Verifiers: never changed together with the content they verify.
+# scripts/verifier-guard.sh reads the paths between the markers below.
+# Supported forms, gitignore style (valid on GitHub, GitLab and Gitea):
+#   /exact/file and /folder/  anchored at the repo root. Without the trailing slash,
+#                             /folder matches the file or everything under it.
+#   name or *.ext             no leading slash and no other slash: matches that
+#                             name at any depth. It may glob. Use it for config
+#                             files the tools read from any directory.
+# BEGIN verifier paths
 /Makefile                       @OWNER
 /scripts/                       @OWNER
 /tools.versions                 @OWNER
@@ -26,4 +38,15 @@
 /.yamllint.yaml                 @OWNER
 /lychee.toml                    @OWNER
 /.claude/settings.json          @OWNER
+/.dockerignore                  @OWNER
 /CODEOWNERS                     @OWNER
+/.github/CODEOWNERS             @OWNER
+/.gitlab/CODEOWNERS             @OWNER
+/docs/CODEOWNERS                @OWNER
+/.gitignore                     @OWNER
+/.gitleaksignore                @OWNER
+/.lycheeignore                  @OWNER
+/.gitattributes                 @OWNER
+.shellcheckrc                   @OWNER
+.markdownlint*                  @OWNER
+# END verifier paths
