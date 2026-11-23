@@ -62,9 +62,32 @@ pick_base() {
   die "no base branch found. Fetch the base branch with full history (CI: fetch-depth 0 / GIT_DEPTH 0) or set GUARD_BASE."
 }
 
-# verifier_block: CODEOWNERS text on stdin, the verifier patterns on stdout.
-verifier_block() {
-  tr -d '\r' | awk '/BEGIN verifier paths/ { on = 1; next } /END verifier paths/ { on = 0 } on && $1 !~ /^#/ && NF { print $1 }'
+# clean TEXT: drop control characters (ESC, CR, newline, ...) so that text from
+# commits or file names cannot overwrite a warning line in a log.
+clean() { printf '%s' "$1" | tr -d '[:cntrl:]'; }
+
+# load_patterns ARRAY LABEL: CODEOWNERS text on stdin. Fill ARRAY with the verifier
+# patterns between the markers. Fail on any line this guard cannot interpret: a
+# silently ignored pattern would be an unguarded path. Supported line:
+#   PATTERN [@owner ...] [# comment]
+# with no backslash, no leading "!", and owners that contain an "@".
+load_patterns() {
+  case "$1" in _lp_*) die "internal error: array name '$1' is reserved" ;; esac
+  local -n _lp_out="$1"
+  local _lp_label="$2" _lp_line _lp_f _lp_i
+  local -a _lp_fields
+  _lp_out=()
+  while IFS= read -r _lp_line; do
+    read -r -a _lp_fields <<<"$_lp_line"
+    [[ "${_lp_fields[0]}" == *\\* ]] && die "unsupported verifier pattern in $_lp_label (backslash or escaped space): $(clean "$_lp_line")"
+    [[ "${_lp_fields[0]}" == '!'* ]] && die "unsupported verifier pattern in $_lp_label (negation with !): $(clean "$_lp_line")"
+    for ((_lp_i = 1; _lp_i < ${#_lp_fields[@]}; _lp_i++)); do
+      _lp_f="${_lp_fields[_lp_i]}"
+      [[ "$_lp_f" == '#'* ]] && break
+      [[ "$_lp_f" == *@* ]] || die "unsupported verifier line in $_lp_label (a pattern with spaces, or a field that is not an owner): $(clean "$_lp_line")"
+    done
+    _lp_out+=("${_lp_fields[0]}")
+  done < <(tr -d '\r' | awk '/BEGIN verifier paths/ { on = 1; next } /END verifier paths/ { on = 0 } on && $1 !~ /^#/ && NF')
 }
 # has_markers: CODEOWNERS text on stdin, true when both markers are there.
 has_markers() {
@@ -78,41 +101,44 @@ merge_base="$(git merge-base "$base" HEAD)" || die "no merge base between $base 
 
 [ -f CODEOWNERS ] || die "CODEOWNERS not found"
 has_markers <CODEOWNERS || die "CODEOWNERS has no verifier path markers (BEGIN/END)"
-mapfile -t patterns < <(verifier_block <CODEOWNERS)
+patterns=()
+load_patterns patterns "CODEOWNERS (working tree)" <CODEOWNERS
 [ "${#patterns[@]}" -gt 0 ] || die "no verifier paths found between the markers in CODEOWNERS"
 
 if base_owners="$(git show "$merge_base:CODEOWNERS" 2>/dev/null)" && has_markers <<<"$base_owners"; then
-  mapfile -t base_patterns < <(verifier_block <<<"$base_owners")
+  base_patterns=()
+  load_patterns base_patterns "CODEOWNERS (merge base)" <<<"$base_owners"
   patterns+=("${base_patterns[@]}")
 else
   warn "no verifier path block in CODEOWNERS at the merge base ${merge_base:0:12}: using the working tree block only"
 fi
 
 # is_verifier PATH: true when PATH matches a pattern. Forms, gitignore style:
-#   /exact/file, /folder/   anchored at the repo root
-#   name, *.ext             no leading / and no other /: matches the basename at any depth
+#   /exact/file, /folder/, /folder   anchored at the repo root. A folder, with or
+#                                    without the trailing slash, covers everything
+#                                    under it; a file name also matches exactly.
+#   name, *.ext, dir/                no leading / and no other /: matches at any
+#                                    depth, as the basename or as a folder name.
+# Anchored patterns and patterns with an inner / may glob; * also crosses slashes,
+# which only protects more.
 is_verifier() {
-  local path="$1" pat anchored
+  local path="$1" pat anchored dir part
+  local -a parts
   for pat in "${patterns[@]}"; do
     anchored=0
     [[ "$pat" == /* ]] && anchored=1
     pat="${pat#/}"
-    case "$pat" in
-      */)
-        if [ "$anchored" -eq 1 ] || [[ "${pat%/}" == */* ]]; then
-          [[ "$path" == "$pat"* ]] && return 0
-        else
-          [[ "/$path" == *"/$pat"* ]] && return 0
-        fi ;;
-      *)
-        if [ "$anchored" -eq 1 ] || [[ "$pat" == */* ]]; then
-          # shellcheck disable=SC2053 # the pattern is meant to glob
-          [[ "$path" == $pat ]] && return 0
-        else
-          # shellcheck disable=SC2053 # the pattern is meant to glob
-          [[ "${path##*/}" == $pat ]] && return 0
-        fi ;;
-    esac
+    dir="${pat%/}"
+    if [ "$anchored" -eq 1 ] || [[ "$dir" == */* ]]; then
+      # shellcheck disable=SC2053 # the pattern is meant to glob
+      [[ "$path" == $dir || "$path" == $dir/* ]] && return 0
+    else
+      IFS=/ read -r -a parts <<<"$path"
+      for part in "${parts[@]}"; do
+        # shellcheck disable=SC2053 # the pattern is meant to glob
+        [[ "$part" == $dir ]] && return 0
+      done
+    fi
   done
   return 1
 }
@@ -139,9 +165,11 @@ if [ "${#verifier[@]}" -gt 0 ] && [ "${#content[@]}" -gt 0 ]; then
     [ -z "$sha" ] && continue
     reason="$(git log -1 --format='%(trailers:key=Verifier-Guard-Override,valueonly)' "$sha" | sed '/^$/d' | paste -sd ';' -)"
     [ -z "$reason" ] && continue
+    reason="$(clean "$reason")"
+    author="$(clean "$(git log -1 --format='%an <%ae>' "$sha")")"
     overridden=1
     warn "!!! VERIFIER GUARD OVERRIDDEN by commit $sha"
-    warn "!!!   author: $(git log -1 --format='%an <%ae>' "$sha")"
+    warn "!!!   author: $author"
     warn "!!!   reason: $reason"
   done <<<"$commits"
   if [ "$overridden" -eq 1 ]; then
@@ -151,9 +179,9 @@ if [ "${#verifier[@]}" -gt 0 ] && [ "${#content[@]}" -gt 0 ]; then
   fail "this change touches verifier paths and other paths together (base: $base)."
   info "Verifiers must change in their own MR/PR, so a change cannot weaken the check that judges it."
   info "Verifier paths changed:"
-  printf '  %s\n' "${verifier[@]}"
+  for f in "${verifier[@]}"; do printf '  %s\n' "$(clean "$f")"; done
   info "Other paths changed:"
-  printf '  %s\n' "${content[@]}"
+  for f in "${content[@]}"; do printf '  %s\n' "$(clean "$f")"; done
   info "Split the change into two MR/PRs. See CONTRIBUTING.md."
   exit 1
 fi
