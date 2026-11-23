@@ -35,6 +35,9 @@ Coming in a later phase: Capture, Plan, Breakdown, Build, Review, Release, Learn
 | [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | Contributor Covenant, adopted by reference |
 | [CHANGELOG.md](CHANGELOG.md) | Notable changes |
 | [CODEOWNERS](CODEOWNERS) | Who must approve what, including verifier paths |
+| [docs/labels.md](docs/labels.md) | The label set and what each label means |
+| `.github/ISSUE_TEMPLATE/`, `.github/pull_request_template.md` | GitHub issue and PR templates |
+| `.gitlab/issue_templates/`, `.gitlab/merge_request_templates/` | GitLab issue and MR templates, same content as GitHub |
 | [docs/bootstrap/kickoff-brief.md](docs/bootstrap/kickoff-brief.md) | The brief this repo was bootstrapped from |
 
 ## Works with
