@@ -23,14 +23,14 @@
 # YAML cannot include tools.versions, so scripts/check-ci-pins.sh fails when the two differ.
 # No third-party CI components are used.
 
-# One pipeline per change: a merge request pipeline, or a branch pipeline on the default
-# branch. A branch with an open MR gets no second (branch) pipeline.
+# One pipeline per change: a merge request pipeline, or a branch pipeline on develop or
+# main (or the default branch). A branch with an open MR gets no second (branch) pipeline.
 workflow:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
       when: never
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /^(develop|main)$/
 
 check:
   stage: test
@@ -43,7 +43,7 @@ check:
   # A job with no rules would not run in merge request pipelines.
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH =~ /^(develop|main)$/
   script:
     # Installs git, make and curl first, then the pinned tools.
     - scripts/install-tools.sh --with-os-packages

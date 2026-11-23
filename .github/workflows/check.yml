@@ -46,7 +46,7 @@ name: check
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [develop, main]
 
 # Least privilege: read the repository, nothing else. Setting any scope sets all others to none.
 permissions:

@@ -15,7 +15,7 @@
 # base branch carries both, a skip is no longer possible and the base guard decides.
 #
 # Limits: the wrapper file (workflow or .gitlab-ci.yml) and this script come from the
-# change. The control outside the repo (protected main, owner approval of every verifier
+# change. The control outside the repo (protected develop and main, owner approval of every verifier
 # path in CODEOWNERS) still has the last word. See scripts/verifier-guard.sh.
 set -euo pipefail
 # shellcheck source=lib.sh
