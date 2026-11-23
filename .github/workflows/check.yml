@@ -1,0 +1,101 @@
+# Thin CI wrapper: install the pinned tools, run make check, run the base-branch guard.
+# All logic lives in scripts/ (see CLAUDE.md). Nothing here needs a secret.
+#
+# Docs this file was written from (read 2026-11-23):
+# - Workflow syntax (permissions, container, timeout-minutes, defaults.run.shell):
+#   https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax
+# - pull_request vs pull_request_target: the docs above say pull_request_target gets a
+#   read/write GITHUB_TOKEN even from a fork. This workflow therefore never uses it.
+# - actions/checkout inputs (fetch-depth, persist-credentials, set-safe-directory):
+#   https://github.com/actions/checkout/blob/3d3c42e5aac5ba805825da76410c181273ba90b1/action.yml
+#
+# Supply chain:
+# - The image is the same CHECK_IMAGE as tools.versions, pinned by digest. YAML cannot
+#   include tools.versions, so scripts/check-ci-pins.sh fails when the two differ.
+# - actions/checkout is pinned by full commit SHA. v7.0.1 was released 2026-07-20 (more
+#   than 14 days old when pinned on 2026-11-23). SHA found with gh api:
+#   repos/actions/checkout/git/ref/tags/v7.0.1 (a lightweight tag, so the object is the commit).
+#   check-ci-pins.sh fails on any uses: line that is not "owner/repo@<40 hex> # vX.Y.Z".
+# - No other third-party action is used.
+#
+# Gitea Actions (act_runner). Phase 4 writes the real doc; known differences until then:
+# - Gitea reads .gitea/workflows/ first and falls back to .github/workflows/ when it is
+#   absent (WORKFLOW_DIRS default in modules/setting/actions.go on Gitea main, the first
+#   existing directory wins). So this file runs unchanged on Gitea, as long as nobody
+#   adds a .gitea/workflows/ folder. That folder is a verifier path in CODEOWNERS.
+#   TODO(verify): the same fallback in the Gitea release you run, and that the user
+#   docs state it: https://docs.gitea.com/usage/actions/comparison
+# - Gitea ignores top-level "permissions" for the scopes it lacks and clamps the rest by
+#   repository settings. contents: read is the safe subset. Same page as above.
+# - runs-on: ubuntu-latest is only a label. Your runner admin decides what it maps to
+#   (a docker image, or the host). TODO(verify): the default label mapping of act_runner
+#   https://docs.gitea.com/usage/actions/act-runner
+# - container: needs a runner label in docker mode. TODO(verify): act_runner support of
+#   the job-level container key https://docs.gitea.com/usage/actions/comparison
+# - JavaScript actions such as actions/checkout run inside the job container. GitHub
+#   mounts its own node there. TODO(verify): whether act_runner needs node in the
+#   image (the python slim image has none) https://docs.gitea.com/usage/actions/faq
+# - Actions come from github.com by default, or from your instance when
+#   [actions] DEFAULT_ACTIONS_URL is "self". A mirror needs a full URL in uses:, which
+#   check-ci-pins.sh rejects until the pin rule is adapted in its own change.
+#   https://docs.gitea.com/usage/actions/faq
+# - Gitea sets GITHUB_BASE_REF for pull requests, which scripts/verifier-guard.sh and
+#   scripts/ci-base-guard.sh read. TODO(verify): https://docs.gitea.com/usage/actions/comparison
+name: check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Least privilege: read the repository, nothing else. Setting any scope sets all others to none.
+permissions:
+  contents: read
+
+defaults:
+  run:
+    # Explicit bash: "bash --noprofile --norc -eo pipefail {0}". The scripts need bash 4.4+.
+    shell: bash
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Container jobs need a Linux runner. Keep the digest in sync with CHECK_IMAGE in tools.versions.
+    container:
+      image: python:3.13.17-slim-trixie@sha256:d98cc29d3266e535dd9da1099688d9cb3ca4753813571e071763d17725460962
+    steps:
+      # git must exist BEFORE checkout. Without it actions/checkout falls back to a REST
+      # download of the code and there is no .git, so the guard and gitleaks cannot work.
+      # The rest of the OS packages come from scripts/install-tools.sh --with-os-packages.
+      - name: Install git
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq --no-install-recommends git ca-certificates >/dev/null
+          rm -rf /var/lib/apt/lists/*
+
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Full history of all branches: the guard needs the merge base with origin/<base>.
+          fetch-depth: 0
+          # No token is left in .git/config for later steps.
+          persist-credentials: false
+          set-safe-directory: true
+
+      # The workspace is owned by another user than the container user: tell git it is safe.
+      # actions/checkout does this too (set-safe-directory); this keeps it explicit and local.
+      - name: Mark the workspace as a safe git directory
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Install the pinned tools
+        run: scripts/install-tools.sh --with-os-packages
+
+      - name: Run all verifiers
+        run: make check
+
+      # make check ran the change's own copy of the guard. This runs the base branch's copy.
+      # GITHUB_BASE_REF is set by GitHub for pull_request runs only.
+      - name: Run the verifier guard from the base branch
+        if: github.event_name == 'pull_request'
+        run: scripts/ci-base-guard.sh
