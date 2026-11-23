@@ -1,0 +1,9 @@
+# Normalise line endings so scripts and template-sync checks behave the same on every OS.
+* text=auto eol=lf
+
+*.sh text eol=lf
+Makefile text eol=lf
+
+*.png binary
+*.jpg binary
+*.pdf binary

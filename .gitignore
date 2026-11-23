@@ -1,0 +1,28 @@
+# Private, local-only notes and drafts. Never committed, anywhere in the tree.
+_local/
+
+# Personal Claude Code settings (the shared file is .claude/settings.json)
+.claude/settings.local.json
+
+# Obsidian per-user state (settings are documented, not committed)
+.obsidian/
+.trash/
+
+# Tooling
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+
+# Editors and OS
+.idea/
+.vscode/
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# Environment files: never commit secrets
+.env
+.env.*
+!.env.example
