@@ -85,3 +85,17 @@ Not every red build is a signal. A typo you fixed in one loop is not.
 - [ ] Rollback steps written.
 - [ ] Learnings inbox entry added if a trigger above fired.
 - [ ] A human reviewer is named in the agent disclosure.
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs live as local Markdown files under `.scratch/<feature>/`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five default roles (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`), recorded as a `Status:` line in each issue file. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `docs/glossary.md` and `docs/adr/`. See `docs/agents/domain.md`.
