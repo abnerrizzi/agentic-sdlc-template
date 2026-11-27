@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DevSecOps Workflow with Claude Agents v1.1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F3F5F7;--surface:#FFFFFF;--ink:#1F2A37;--muted:#5B6675;--rule:#D6DCE3;
+  --accent:#2D5BBA;--accent-soft:#E3EAF8;
+  --pass:#2E7D4F;--pass-soft:#E2F1E8;--gate:#9A620F;--gate-soft:#F7EBD6;--block:#B33A32;--block-soft:#F6E1DF;
+  --haiku:#5C7A8C;--sonnet:#2D5BBA;--opus:#6B4FB3;--fable:#8C3F72;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#12171D;--surface:#1A2129;--ink:#E6EBF0;--muted:#9AA6B2;--rule:#2C3640;
+    --accent:#86A8EE;--accent-soft:#1F2B44;
+    --pass:#6CC492;--pass-soft:#1B3026;--gate:#E0A94A;--gate-soft:#33281A;--block:#E6837B;--block-soft:#3A2220;
+    --haiku:#8FAEC0;--sonnet:#86A8EE;--opus:#AE97E8;--fable:#D58BBE;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#12171D;--surface:#1A2129;--ink:#E6EBF0;--muted:#9AA6B2;--rule:#2C3640;
+  --accent:#86A8EE;--accent-soft:#1F2B44;
+  --pass:#6CC492;--pass-soft:#1B3026;--gate:#E0A94A;--gate-soft:#33281A;--block:#E6837B;--block-soft:#3A2220;
+  --haiku:#8FAEC0;--sonnet:#86A8EE;--opus:#AE97E8;--fable:#D58BBE;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 72px);scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.55 "Instrument Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+code,.mono{font-family:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.86em}
+code{background:var(--accent-soft);padding:.08em .35em;border-radius:4px}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+
+.layout{display:grid;grid-template-columns:232px minmax(0,1fr);max-width:1240px;margin:0 auto}
+.rail{position:sticky;top:env(safe-area-inset-top,0px);height:100vh;padding:32px 20px 32px 28px;border-right:1px solid var(--rule);display:flex;flex-direction:column;gap:20px}
+.rail h1{font-size:17px;line-height:1.3;margin:0;font-weight:700}
+.rail p{margin:0;color:var(--muted);font-size:13.5px}
+.rail nav{display:flex;flex-direction:column;gap:2px}
+.rail nav a{color:var(--muted);text-decoration:none;font-size:14.5px;padding:6px 10px;border-radius:6px;border-left:2px solid transparent}
+.rail nav a:hover{color:var(--ink);background:var(--surface)}
+.rail nav a.on{color:var(--ink);border-left-color:var(--accent);background:var(--surface);font-weight:600}
+main{padding:40px 48px 96px;min-width:0}
+section{padding:40px 0 8px;border-top:1px solid var(--rule)}
+section:first-of-type{border-top:0;padding-top:0}
+h2{font-size:28px;line-height:1.2;margin:0 0 8px;font-weight:700;letter-spacing:-.01em}
+h3{font-size:17px;margin:28px 0 10px;font-weight:600}
+.lead{color:var(--muted);max-width:68ch;margin:0 0 24px;font-size:17px}
+p{max-width:72ch}
+
+/* Hero pipeline */
+.hero h2{font-size:clamp(30px,4vw,44px);max-width:20ch;margin-bottom:12px}
+.pipe{list-style:none;margin:28px 0 0;padding:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:0;position:relative}
+.pipe li{position:relative}
+.pipe li:not(:last-child)::after{content:"";position:absolute;top:22px;left:calc(50% + 22px);right:calc(-50% + 22px);height:2px;background:var(--rule)}
+.stage{all:unset;cursor:pointer;display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;width:100%;padding:0 4px 12px;border-radius:10px}
+.stage .dot{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:15px;background:var(--surface);border:2px solid var(--rule);color:var(--muted);position:relative;z-index:1}
+.stage .nm{font-weight:600;font-size:15px}
+.stage .gt{font-size:12.5px;color:var(--muted);line-height:1.35;max-width:14ch}
+.stage:hover .dot{border-color:var(--accent);color:var(--accent)}
+.stage[aria-selected="true"] .dot{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.stage[aria-selected="true"] .nm{color:var(--accent)}
+.stage:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.detail{margin-top:20px;background:var(--surface);border:1px solid var(--rule);border-radius:14px;padding:24px 28px;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:28px}
+.detail h3{margin:0 0 14px;font-size:20px}
+.facts{display:grid;grid-template-columns:auto 1fr;gap:8px 16px;margin:0;font-size:15px}
+.facts dt{color:var(--muted)}
+.facts dd{margin:0}
+.gatebox{margin-top:16px;padding:12px 14px;border-radius:10px;background:var(--gate-soft);color:var(--ink);font-size:14.5px;border-left:3px solid var(--gate)}
+.gatebox b{color:var(--gate)}
+.loop{margin-top:10px;font-size:14px;color:var(--muted)}
+.mini h4{margin:0 0 10px;font-size:14px;color:var(--muted);font-weight:500}
+.mini ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.mini li{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;padding-bottom:10px;border-bottom:1px solid var(--rule);font-size:14.5px}
+.mini li:last-child{border-bottom:0;padding-bottom:0}
+
+/* Model chips + effort meter */
+.model{display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:13.5px;white-space:nowrap}
+.model::before{content:"";width:9px;height:9px;border-radius:50%;background:currentColor}
+.m-haiku{color:var(--haiku)}.m-sonnet{color:var(--sonnet)}.m-opus{color:var(--opus)}.m-fable{color:var(--fable)}
+.effort{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);white-space:nowrap}
+.meter{display:inline-flex;gap:3px}
+.meter i{width:10px;height:10px;border-radius:2px;background:var(--rule)}
+.meter i.f{background:var(--ink)}
+.meter.hot i.f{background:var(--gate)}
+
+/* Principles */
+.principles{list-style:none;counter-reset:p;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 40px}
+.principles li{counter-increment:p;padding:16px 0 16px 44px;position:relative;border-top:1px solid var(--rule)}
+.principles li::before{content:counter(p);position:absolute;left:0;top:14px;font-weight:700;font-size:22px;color:var(--accent);width:32px}
+.principles b{display:block;margin-bottom:2px}
+.principles span{color:var(--muted);font-size:15px}
+
+/* Tables */
+.tw{overflow-x:auto;border:1px solid var(--rule);border-radius:12px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:13.5px;background:var(--paper)}
+tr:last-child td{border-bottom:0}
+td.why{color:var(--muted)}
+
+/* Filter */
+.filters{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}
+.filters button{font:inherit;font-size:13.5px;padding:6px 12px;border-radius:999px;border:1px solid var(--rule);background:var(--surface);color:var(--muted);cursor:pointer}
+.filters button[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.legend{display:flex;flex-wrap:wrap;gap:18px;margin:16px 0 0;font-size:13.5px;color:var(--muted)}
+
+/* Security */
+.block{display:inline-block;font-size:12.5px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--block-soft);color:var(--block);white-space:nowrap}
+.block.soft{background:var(--gate-soft);color:var(--gate)}
+.block.none{background:var(--paper);color:var(--muted)}
+.guards{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.guards li{padding:12px 16px;background:var(--surface);border:1px solid var(--rule);border-radius:10px;font-size:15px}
+
+/* Ladder */
+.ladder{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+.ladder li{display:grid;grid-template-columns:150px 1fr;gap:16px;align-items:baseline;padding:14px 18px;border-radius:10px;background:var(--surface);border:1px solid var(--rule)}
+.ladder li:first-child{border-left:4px solid var(--pass)}
+.ladder li:nth-child(2){border-left:4px solid var(--accent)}
+.ladder li:nth-child(3){border-left:4px solid var(--opus)}
+.ladder li:nth-child(4){border-left:4px solid var(--rule)}
+.ladder b{font-size:15px}
+.ladder span{color:var(--muted);font-size:14.5px}
+pre{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:16px 18px;overflow-x:auto;margin:16px 0 0;line-height:1.5}
+pre code{background:none;padding:0;font-size:13px}
+
+/* Layers */
+.layers{display:grid;gap:0;border:1px solid var(--rule);border-radius:12px;overflow:hidden;background:var(--surface)}
+.layer{display:grid;grid-template-columns:180px 1fr 1fr;gap:20px;padding:18px 20px;border-bottom:1px solid var(--rule)}
+.layer:last-child{border-bottom:0}
+.layer .t b{display:block;font-size:16px}
+.layer .t span{color:var(--muted);font-size:13.5px}
+.layer p{margin:0;font-size:14.5px}
+.layer p small{display:block;color:var(--muted);font-size:12.5px;margin-bottom:2px}
+.layer.rec{background:var(--accent-soft)}
+.rules{padding-left:20px;margin:12px 0 0}
+.rules li{margin:6px 0}
+
+/* Rollout */
+.todo{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+.todo label{display:flex;gap:12px;align-items:flex-start;padding:12px 16px;background:var(--surface);border:1px solid var(--rule);border-radius:10px;cursor:pointer;font-size:15px}
+.todo input{margin-top:4px;width:18px;height:18px;accent-color:var(--pass);flex:none}
+.todo input:checked + span{color:var(--muted);text-decoration:line-through}
+.progress{display:flex;align-items:center;gap:12px;margin:0 0 14px;font-size:14px;color:var(--muted)}
+.bar{flex:1;max-width:280px;height:8px;background:var(--rule);border-radius:999px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--pass);width:0;transition:width .3s}
+.open{margin-top:24px;padding:16px 20px;border-radius:10px;background:var(--gate-soft);border-left:3px solid var(--gate)}
+.open h3{margin:0 0 8px;font-size:15px}
+.open ul{margin:0;padding-left:20px}
+
+.topbar{display:none}
+@media (max-width:900px){
+  .layout{grid-template-columns:1fr}
+  .rail{display:none}
+  .topbar{display:flex;position:sticky;top:0;z-index:10;gap:6px;overflow-x:auto;padding:10px 16px;padding-top:calc(10px + env(safe-area-inset-top,0px));margin-top:calc(-1 * env(safe-area-inset-top,0px));background:var(--paper);border-bottom:1px solid var(--rule)}
+  .topbar a{flex:none;font-size:14px;color:var(--muted);text-decoration:none;padding:6px 12px;border-radius:999px;border:1px solid var(--rule);background:var(--surface)}
+  .topbar a.on{color:var(--surface);background:var(--ink);border-color:var(--ink)}
+  main{padding:24px 18px 72px}
+  .pipe{grid-template-columns:repeat(4,minmax(0,1fr));row-gap:16px}
+  .pipe li::after{display:none}
+  .detail{grid-template-columns:1fr;padding:20px}
+  .principles{grid-template-columns:1fr}
+  .layer{grid-template-columns:1fr;gap:8px}
+  .ladder li{grid-template-columns:1fr;gap:4px}
+}
+</style>
+</head>
+<body>
+<nav class="topbar" aria-label="Sections" id="topbar"></nav>
+<div class="layout">
+  <aside class="rail">
+    <div>
+      <h1>DevSecOps workflow with Claude agents</h1>
+      <p>Proposal v1.1, updated 2026-11-27. Superseded by v3.</p>
+    </div>
+    <nav aria-label="Sections" id="railnav"></nav>
+  </aside>
+
+  <main>
+    <section id="overview" class="hero" data-label="Overview">
+      <h2>Agents propose, gates decide, every cycle teaches</h2>
+      <p class="lead">A git-first workflow for Gitea or GitLab on k3s. Claude agents plan, build and review; every thought, decision, task and learning lands in the repo as reviewable text, and a human approves every merge. Pick a stage to see what it needs and which model runs it.</p>
+      <ol class="pipe" id="pipe" role="tablist" aria-label="Lifecycle stages"></ol>
+      <div class="detail" id="detail" role="tabpanel" aria-live="polite"></div>
+    </section>
+
+    <section id="principles" data-label="Principles">
+      <h2>Foundation principles</h2>
+      <p class="lead">Ten rules every repo, agent and person follows. When in doubt, these win over convenience.</p>
+      <ol class="principles" id="principlesList"></ol>
+    </section>
+
+    <section id="tracking" data-label="Tracking">
+      <h2>Where each thing lives</h2>
+      <p class="lead">Work items live in the tracker and get closed. Knowledge lives in the repo as files and gets read by agents.</p>
+      <div class="tw"><table>
+        <thead><tr><th>Item</th><th>Lives in</th><th>Format</th><th>States</th></tr></thead>
+        <tbody id="trackBody"></tbody>
+      </table></div>
+      <h3>Traceability chain</h3>
+      <p>Commit <code>feat(api): rate-limit login (#123)</code> &gt; MR <code>Closes #123</code> &gt; story #123 &gt; epic &amp;12 &gt; ADR-0007. Any line of code walks back to why it exists.</p>
+    </section>
+
+    <section id="agents" data-label="Models">
+      <h2>Which model, at what effort</h2>
+      <p class="lead">Sonnet 5.5 at high builds, Opus 5.5 at high or xhigh thinks and guards security, Haiku 5.5 handles chores. Fable 5.2 is kept for the hardest cross-system problems. Use <code>max</code> only after <code>xhigh</code> has failed.</p>
+      <div class="filters" id="filters" role="group" aria-label="Filter by stage"></div>
+      <div class="tw"><table>
+        <thead><tr><th>Stage</th><th>Task</th><th>Model</th><th>Effort</th><th>Why</th><th>Escalate to</th></tr></thead>
+        <tbody id="agentBody"></tbody>
+      </table></div>
+      <div class="legend">
+        <span>Effort: low · medium · high (API default) · xhigh · max</span>
+        <span>Haiku rows run at the default: the effort docs don’t list Haiku as supported.</span>
+      </div>
+    </section>
+
+    <section id="security" data-label="Security">
+      <h2>Security gates</h2>
+      <p class="lead">Open-source scanners that run the same on GitLab CI and Gitea Actions. They start as warnings in the pilot, then criticals block.</p>
+      <div class="tw"><table>
+        <thead><tr><th>Where</th><th>Check</th><th>Tool</th><th>Blocks merge</th></tr></thead>
+        <tbody id="secBody"></tbody>
+      </table></div>
+      <h3>Agent guardrails</h3>
+      <ul class="guards" id="guards"></ul>
+    </section>
+
+    <section id="learnings" data-label="Learnings">
+      <h2>Learnings that change behaviour</h2>
+      <p class="lead">A learning only counts when it changes something an agent or pipeline reads. Each item is promoted to the strongest place that can hold it.</p>
+      <ol class="ladder">
+        <li><b>1. CI rule</b><span>If a check can enforce it, write the check. A Semgrep rule banning raw SQL strings.</span></li>
+        <li><b>2. CLAUDE.md</b><span>Judgement, not mechanics. “Don’t add a new service without a health endpoint.”</span></li>
+        <li><b>3. ADR</b><span>When the learning changes a decision.</span></li>
+        <li><b>4. Learnings log</b><span>Context worth keeping that isn’t a rule.</span></li>
+      </ol>
+<pre><code>## 2026-11 - Epic &amp;12 Auth API
+**Learned:** Supabase RLS policies were the only auth layer; API had none.
+**Do:** Enforce authz in the API layer and test it per endpoint.
+**Don't:** Ship anon keys in frontend bundles.
+**Evidence:** !45, #50, pipeline 1932
+**Promoted to:** CI rule (gitleaks custom pattern), CLAUDE.md</code></pre>
+    </section>
+
+    <section id="tools" data-label="Docs and brain">
+      <h2>Three layers of knowledge</h2>
+      <p class="lead">Obsidian for private thinking, Claude Docs for shared drafts, git for the record. Notes move down a layer once they become a decision, task or learning.</p>
+      <div class="layers">
+        <div class="layer"><div class="t"><b>Obsidian vault</b><span>Private thinking</span></div><p><small>Holds</small>Half-formed ideas, research, call notes, cross-client patterns, runbooks</p><p><small>Read by</small>You, and agents you point at it</p></div>
+        <div class="layer"><div class="t"><b>Claude Docs</b><span>Shared drafts</span></div><p><small>Holds</small>Proposals, meeting notes, docs for reviewers who don’t use git</p><p><small>Read by</small>You, clients and colleagues</p></div>
+        <div class="layer rec"><div class="t"><b>Repos + tracker</b><span>The record</span></div><p><small>Holds</small>ADRs, epics, stories, learnings, threat models</p><p><small>Read by</small>Everyone, CI and agents</p></div>
+      </div>
+      <h3>Obsidian setup rules</h3>
+      <ol class="rules">
+        <li>Personal vault in its own private git repo, synced with the obsidian-git plugin.</li>
+        <li>A note that becomes a decision, task or learning moves to the repo, and the note links to it.</li>
+        <li>One vault per confidentiality boundary: Coremont material never shares a vault with Comurg or personal notes.</li>
+        <li>A <code>CLAUDE.md</code> at the vault root describes the layout and what is off-limits to agents.</li>
+      </ol>
+    </section>
+
+    <section id="platforms" data-label="Gitea vs GitLab">
+      <h2>Gitea or GitLab</h2>
+      <p class="lead">Both work. Gitea is the lighter fit for a 3-node k3s cluster and a small team; GitLab wins if native epics, approval rules and security dashboards matter more than resources.</p>
+      <div class="tw"><table>
+        <thead><tr><th>Need</th><th>GitLab (CE / Free)</th><th>Gitea</th></tr></thead>
+        <tbody id="platBody"></tbody>
+      </table></div>
+    </section>
+
+    <section id="rollout" data-label="Rollout">
+      <h2>Rollout</h2>
+      <p class="lead">Six steps from template repo to blocking gates. Tick them off as you go; progress stays in this browser.</p>
+      <div class="progress"><div class="bar"><i id="barFill"></i></div><span id="barText">0 of 6 done</span></div>
+      <ul class="todo" id="todo"></ul>
+      <div class="open">
+        <h3>Open questions</h3>
+        <ul>
+          <li>One repo per app plus a shared <code>platform</code> repo for cross-cutting ADRs, or a monorepo?</li>
+          <li>Who is the second human reviewer for <code>sec/*</code> changes on a one-person team?</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+const LEVELS = ["low","medium","high","xhigh","max"];
+const MODELS = {haiku:"Haiku 5.5",sonnet:"Sonnet 5.5",opus:"Opus 5.5",fable:"Fable 5.2"};
+
+const STAGES = [
+  {key:"capture",n:0,name:"Capture",gate:"Weekly triage",input:"A thought, request or alert",output:"Issue labelled type/idea",gateFull:"Weekly triage: promote to an epic or close.",who:"Anyone"},
+  {key:"plan",n:1,name:"Plan",gate:"Epic + ADR approved",input:"Idea or business need",output:"Epic with outcome, scope, non-goals and metric, plus a draft ADR if a choice is made",gateFull:"You approve the epic and the ADR moves to accepted.",who:"Planner agent + you"},
+  {key:"breakdown",n:2,name:"Breakdown",gate:"Definition of Ready",input:"Approved epic",output:"Stories with acceptance criteria, task checklist, security notes",gateFull:"Testable criteria, threat notes written, no open questions.",who:"Breakdown agent + you"},
+  {key:"build",n:3,name:"Build",gate:"CI + scans green",input:"Ready story",output:"Branch, code, tests, draft MR with rollback steps",gateFull:"CI green: tests and every security scan pass.",who:"Builder agent in Claude Code"},
+  {key:"review",n:4,name:"Review",gate:"AI + human approve",input:"Draft MR",output:"Review comments, fixes, approvals",gateFull:"AI review in a fresh session, human approval via CODEOWNERS, zero open criticals.",who:"Reviewer agent + human",loop:"Rework sends the MR back to Build until it passes."},
+  {key:"release",n:5,name:"Release",gate:"Prod approval",input:"Merged MR",output:"Tag, image, deploy dev > qa > prod via GitOps",gateFull:"Manual approval for prod, rollback tested in qa.",who:"Pipeline + you"},
+  {key:"learn",n:6,name:"Learn",gate:"Retro MR merged",input:"Closed epic or incident",output:"Learnings entry, updated CLAUDE.md, a new CI rule or ADR",gateFull:"Retro MR merged; only then does the epic close.",who:"Retro agent + you",loop:"Feeds the next Plan, so each epic starts smarter than the last."}
+];
+
+const AGENTS = [
+  {s:"capture",task:"Triage ideas, label, spot duplicates",m:"haiku",e:null,why:"Short, high volume, low stakes",up:"Sonnet 5.5 low"},
+  {s:"plan",task:"Architecture options, trade-offs, ADR draft",m:"opus",e:"high",why:"Long reasoning, second-order effects",up:"Fable 5.2 high for multi-system designs"},
+  {s:"plan",task:"Threat model per component (STRIDE)",m:"opus",e:"xhigh",why:"A missed attack path is expensive later",up:"Human security review"},
+  {s:"breakdown",task:"Epic > stories, acceptance criteria, tasks",m:"sonnet",e:"medium",why:"Structured and template-driven",up:"Opus 5.5 high if the epic is vague or large"},
+  {s:"breakdown",task:"Security notes per story",m:"sonnet",e:"high",why:"Needs care, scoped to one story",up:"Opus 5.5 high"},
+  {s:"build",task:"Feature code, IaC (Terraform, Ansible, k8s)",m:"sonnet",e:"high",why:"Best speed and quality balance for agentic coding",up:"Sonnet xhigh, then Opus 5.5 after 2 failed attempts"},
+  {s:"build",task:"Large refactor or migration (Supabase exit)",m:"opus",e:"xhigh",why:"Many files, order of changes matters",up:"Fable 5.2 xhigh"},
+  {s:"build",task:"Tests scaffold, docs, commit messages",m:"haiku",e:null,why:"Well-defined text, cheap and fast",up:"Sonnet 5.5 low"},
+  {s:"build",task:"CI log triage, failing pipeline summary",m:"haiku",e:null,why:"Short context, repetitive",up:"Sonnet 5.5 medium if root cause is unclear"},
+  {s:"review",task:"First-pass code review, fresh session",m:"sonnet",e:"high",why:"A different session from the builder",up:"Opus 5.5 high"},
+  {s:"review",task:"Security review (sec/*: auth, crypto, secrets, input)",m:"opus",e:"xhigh",why:"Subtle bugs, high stakes",up:"Human approval always"},
+  {s:"release",task:"Check terraform plan, deploy diff and rollback steps",m:"sonnet",e:"high",why:"Must catch destructive changes before apply",up:"Opus 5.5 high for prod data changes"},
+  {s:"release",task:"Changelog, release notes, MR summary",m:"haiku",e:null,why:"Summarising merged work",up:"Sonnet 5.5 low"},
+  {s:"incident",task:"RCA and postmortem draft",m:"opus",e:"xhigh",why:"Correlates logs, timeline and code",up:"Fable 5.2 xhigh"},
+  {s:"learn",task:"Distil learnings into dos and don’ts",m:"sonnet",e:"medium",why:"Summary plus judgement on what generalises",up:"Opus 5.5 high for big epics"},
+  {s:"learn",task:"Turn a learning into a CI rule (Semgrep, gitleaks)",m:"sonnet",e:"high",why:"It becomes code that blocks merges",up:"Opus 5.5 high"}
+];
+
+const PRINCIPLES = [
+  ["Git is the source of truth.","If it is not in the repo or the tracker, it did not happen. Chat history is not a record."],
+  ["Plain text, versioned.","Markdown with frontmatter for ADRs, learnings and threat models. Accepted ADRs are superseded, never edited."],
+  ["Agents propose, humans decide.","No agent merges to main, approves its own MR, or holds production credentials."],
+  ["Small batches.","One story, one branch, one MR. Diffs a human can review in 15 minutes."],
+  ["Read-only first.","Diagnose and plan before apply. Every risky MR carries explicit rollback steps."],
+  ["Security is enforced, not requested.","Secrets, SAST, dependency, IaC and image scans run in CI and block on criticals."],
+  ["Least privilege for agents.","A bot account per role, scoped tokens, protected branches, no prod secrets in context."],
+  ["Everything as code.","Infra, pipelines, policies and agent instructions all go through MRs."],
+  ["Right model for the job.","The cheapest model that does the task reliably; escalate after two failed attempts."],
+  ["Every cycle teaches.","An epic closes only when its retro is merged as a change agents read."]
+];
+
+const TRACK = [
+  ["Thought / idea","Issue, <code>type/idea</code>","Free text, 3 to 5 lines","open > promoted or closed"],
+  ["Decision (ADR)","<code>docs/adr/0007-use-k3s.md</code>","MADR template","proposed > accepted > superseded"],
+  ["Epic","GitLab Epic, or parent issue <code>type/epic</code> + milestone","Outcome, scope, non-goals, metric","open > in progress > retro > closed"],
+  ["Story","Issue <code>type/story</code>","User story, acceptance criteria, security notes, tasks","ready > doing > review > done"],
+  ["Task","Checklist inside the story","One line each","open > ticked"],
+  ["Bug / incident","Issue <code>type/bug</code> or <code>type/incident</code>","Repro or timeline","open > fixed > postmortem"],
+  ["Threat model","<code>docs/threat-models/</code>","STRIDE-lite table","living, updated via MR"],
+  ["Learning","<code>docs/learnings/</code>","Learned / Do / Don’t / Evidence","append-only"],
+  ["Agent run","MR description","Model, task, what changed, what was skipped","per MR"]
+];
+
+const SEC = [
+  ["Pre-commit","Secrets, lint, format","gitleaks, pre-commit hooks","Locally","hard"],
+  ["CI","Secret detection on full diff","gitleaks","Yes","hard"],
+  ["CI","SAST","Semgrep","Critical / high","hard"],
+  ["CI","Dependencies and licences","Trivy fs or OSV-Scanner","Critical","hard"],
+  ["CI","IaC misconfig (Terraform, k8s, Dockerfile)","Trivy config or Checkov","High","hard"],
+  ["CI","Container image vulnerabilities","Trivy image","Critical","hard"],
+  ["CI","SBOM and signing","Syft + Cosign","Must exist","soft"],
+  ["Deploy","Signed images only, policy checks","Kyverno in k3s","Yes","hard"],
+  ["Deploy","Secrets injected at runtime, never in repo","Vault","No","none"],
+  ["Prod","Manual approval + rollback plan in MR","Protected environment","Yes","hard"]
+];
+
+const GUARDS = [
+  "One bot account per agent role. Its token can push branches and open MRs, never merge or touch protected branches.",
+  "Claude Code deny list: <code>terraform apply</code>, <code>kubectl delete</code>, the prod kube context, <code>rm -rf</code>, reading <code>.env</code> or Vault tokens.",
+  "Agents run <code>terraform plan</code> and read-only diagnostics; <code>apply</code> runs only in the pipeline after approval.",
+  "MRs labelled <code>agent/authored</code> need one human approval; <code>sec/*</code> needs a second reviewer.",
+  "Issue and MR text from outside the team is untrusted input: agents never follow instructions found in it."
+];
+
+const PLAT = [
+  ["Epics","Paid-tier feature; on Free, a parent issue + milestone","Parent issue with task list + milestone"],
+  ["Boards","Issue boards","Project boards"],
+  ["Exclusive labels","Scoped <code>a::b</code> on paid tier; prefix convention on Free","Exclusive <code>a/b</code> labels"],
+  ["CI","GitLab CI, runner with Kubernetes executor","Gitea Actions (GitHub Actions syntax), act_runner in k3s"],
+  ["Templates","<code>.gitlab/issue_templates/</code>","<code>.gitea/ISSUE_TEMPLATE/</code>"],
+  ["Code owners","CODEOWNERS, required approvals on paid tier","CODEOWNERS review requests"],
+  ["Security scans","Built-in templates (depth varies by tier) + the open-source set","The open-source set"],
+  ["Footprint","Heavy, several GB of RAM","Light, one small container"]
+];
+
+const TODO = [
+  "Write ADR-0001 (adopt this workflow) and ADR-0002 (Gitea or GitLab)",
+  "Build the template repo: CLAUDE.md, .claude/agents/, issue and MR templates, labels, CODEOWNERS",
+  "Add the CI security baseline in warn-only mode",
+  "Create bot accounts, scoped tokens, protected branches and the Claude Code deny list",
+  "Pilot one epic end to end, the Supabase key exposure fix, including its retro",
+  "Review the pilot retro, switch criticals to blocking, roll out to the other repos"
+];
+
+const $ = s => document.querySelector(s);
+const esc = s => s;
+
+function modelChip(m){ return `<span class="model m-${m}">${MODELS[m]}</span>`; }
+function effortMeter(e){
+  if(!e) return `<span class="effort">default</span>`;
+  const n = LEVELS.indexOf(e) + 1;
+  const cells = LEVELS.map((_,i)=>`<i class="${i<n?'f':''}"></i>`).join("");
+  return `<span class="effort"><span class="meter${n>=4?' hot':''}" aria-hidden="true">${cells}</span>${e}</span>`;
+}
+function stageName(k){ if(k==="incident") return "Incident"; const s = STAGES.find(x=>x.key===k); return `${s.n}. ${s.name}`; }
+
+/* Pipeline */
+const pipe = $("#pipe");
+pipe.innerHTML = STAGES.map(s=>`<li><button class="stage" role="tab" id="tab-${s.key}" aria-selected="false" aria-controls="detail" data-k="${s.key}"><span class="dot">${s.n}</span><span class="nm">${s.name}</span><span class="gt">${s.gate}</span></button></li>`).join("");
+function showStage(k){
+  const s = STAGES.find(x=>x.key===k);
+  pipe.querySelectorAll(".stage").forEach(b=>b.setAttribute("aria-selected", b.dataset.k===k ? "true":"false"));
+  const rows = AGENTS.filter(a=>a.s===k);
+  $("#detail").innerHTML = `
+    <div>
+      <h3>${s.n}. ${s.name}</h3>
+      <dl class="facts"><dt>Input</dt><dd>${s.input}</dd><dt>Output</dt><dd>${s.output}</dd><dt>Who</dt><dd>${s.who}</dd></dl>
+      <div class="gatebox"><b>Gate:</b> ${s.gateFull}</div>
+      ${s.loop?`<div class="loop">↺ ${s.loop}</div>`:""}
+    </div>
+    <div class="mini">
+      <h4>Models for this stage</h4>
+      <ul>${rows.map(r=>`<li><span>${r.task}</span><span>${modelChip(r.m)}</span><span></span><span>${effortMeter(r.e)}</span></li>`).join("")}</ul>
+    </div>`;
+  $("#detail").setAttribute("aria-labelledby","tab-"+k);
+}
+pipe.addEventListener("click", e=>{ const b = e.target.closest(".stage"); if(b) showStage(b.dataset.k); });
+pipe.addEventListener("keydown", e=>{
+  const b = e.target.closest(".stage"); if(!b) return;
+  const keys = STAGES.map(s=>s.key); let i = keys.indexOf(b.dataset.k);
+  if(e.key==="ArrowRight") i = Math.min(keys.length-1,i+1); else if(e.key==="ArrowLeft") i = Math.max(0,i-1); else return;
+  e.preventDefault(); showStage(keys.at(i)); document.getElementById("tab-"+keys.at(i)).focus();
+});
+showStage("build");
+
+/* Principles */
+$("#principlesList").innerHTML = PRINCIPLES.map(([b,t])=>`<li><b>${b}</b><span>${t}</span></li>`).join("");
+
+/* Tracking */
+$("#trackBody").innerHTML = TRACK.map(r=>`<tr><td><b>${r[0]}</b></td><td>${r[1]}</td><td>${r[2]}</td><td class="why">${r[3]}</td></tr>`).join("");
+
+/* Agents with filter */
+const FILTERS = [["all","All"],...STAGES.map(s=>[s.key,`${s.n}. ${s.name}`]),["incident","Incident"]];
+$("#filters").innerHTML = FILTERS.map(([k,l])=>`<button type="button" data-f="${k}" aria-pressed="${k==='all'}">${l}</button>`).join("");
+function renderAgents(f){
+  const rows = f==="all" ? AGENTS : AGENTS.filter(a=>a.s===f);
+  $("#agentBody").innerHTML = rows.map(a=>`<tr><td>${stageName(a.s)}</td><td>${a.task}</td><td>${modelChip(a.m)}</td><td>${effortMeter(a.e)}</td><td class="why">${a.why}</td><td class="why">${a.up}</td></tr>`).join("");
+  $("#filters").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed", b.dataset.f===f ? "true":"false"));
+}
+$("#filters").addEventListener("click", e=>{ const b = e.target.closest("button"); if(b) renderAgents(b.dataset.f); });
+renderAgents("all");
+
+/* Security */
+const blockCls = {hard:"block",soft:"block soft",none:"block none"};
+$("#secBody").innerHTML = SEC.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td><span class="${blockCls[r[4]]}">${r[3]}</span></td></tr>`).join("");
+$("#guards").innerHTML = GUARDS.map(g=>`<li>${g}</li>`).join("");
+
+/* Platforms */
+$("#platBody").innerHTML = PLAT.map(r=>`<tr><td><b>${r[0]}</b></td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join("");
+
+/* Rollout with per-viewer progress */
+const KEY = "devsecops-rollout";
+let done = [];
+try { done = JSON.parse(localStorage.getItem(KEY) || "[]"); if(!Array.isArray(done)) done = []; } catch(_) { done = []; }
+$("#todo").innerHTML = TODO.map((t,i)=>`<li><label><input type="checkbox" data-i="${i}" ${done.includes(i)?"checked":""}><span>${t}</span></label></li>`).join("");
+function updateBar(){
+  const n = done.length;
+  $("#barFill").style.width = (n/TODO.length*100)+"%";
+  $("#barText").textContent = `${n} of ${TODO.length} done`;
+}
+$("#todo").addEventListener("change", e=>{
+  const i = Number(e.target.dataset.i);
+  done = e.target.checked ? [...new Set([...done,i])] : done.filter(x=>x!==i);
+  try { localStorage.setItem(KEY, JSON.stringify(done)); } catch(_) {}
+  updateBar();
+});
+updateBar();
+
+/* Section nav + scroll spy */
+const sections = [...document.querySelectorAll("main section")];
+const links = sections.map(s=>`<a href="#${s.id}" data-id="${s.id}">${s.dataset.label}</a>`).join("");
+$("#railnav").innerHTML = links; $("#topbar").innerHTML = links;
+const spy = new IntersectionObserver(entries=>{
+  entries.forEach(en=>{
+    if(en.isIntersecting){
+      document.querySelectorAll("[data-id]").forEach(a=>a.classList.toggle("on", a.dataset.id===en.target.id));
+      const t = document.querySelector(`#topbar [data-id="${en.target.id}"]`);
+      if(t && t.scrollIntoView && window.matchMedia("(max-width:900px)").matches) t.scrollIntoView({block:"nearest",inline:"center"});
+    }
+  });
+},{rootMargin:"-30% 0px -60% 0px"});
+sections.forEach(s=>spy.observe(s));
+function goHash(){ const id = location.hash.slice(1); const el = id && document.getElementById(id); if(el) el.scrollIntoView(); }
+window.addEventListener("hashchange", goHash);
+if(location.hash) setTimeout(goHash, 50);
+</script>
+</body>
+</html>
